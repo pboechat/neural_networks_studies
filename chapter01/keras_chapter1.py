@@ -1,20 +1,25 @@
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Input, Dense
 from keras import optimizers
 import numpy as np
 np.random.seed(9)
 
 model = Sequential()
 
+# Input
+model.add(Input(shape=(3,)))
 # Layer 1
-model.add(Dense(units=4, activation='sigmoid', input_dim=3))
+model.add(Dense(units=4, activation='sigmoid'))
 # Output Layer
 model.add(Dense(units=1, activation='sigmoid'))
 
 print(model.summary())
 print('')
 
-sgd = optimizers.SGD(lr=1)
+sgd = optimizers.SGD(learning_rate=1.0)
 model.compile(loss='mean_squared_error', optimizer=sgd)
 
 X = np.array([[0,0,1],
