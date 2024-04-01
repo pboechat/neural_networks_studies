@@ -3,20 +3,27 @@ import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import pandas as pd
-from keras.models import Sequential
+from keras.models import load_model, Sequential
 from keras.layers import Input, Dense
-from diabetes_data_processing import replace_zeros_with_nans, fill_nans_with_mean, scale, split_train_test
-from diabetes_data_vizualization import plot_columns_by_class, plot_confusion_matrix
+from utilities.data_processing import replace_zeros_with_nans, fill_nans_with_mean, scale, split_train_test
+from utilities.networking import download_file
+from utilities.vizualisation import plot_columns_by_class, plot_confusion_matrix
 
 _COLUMNS_WITH_MISSING_DATA = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
 _CLASSIFIER_COLUMN = 'Outcome'
 _CLASS_VALUES = [0, 1]
 _CLASS_LABELS = ['No Diabetes', 'Diabetes']
 _EPOCHS = 200
+_MODEL_FILE = 'puma_indians_diabetes_model.keras'
+_DATASET_URL = 'https://onedrive.live.com/download?resid=E3637CE709BADFAF%2176635&authkey=!AJuaz58jVaVVugg'
+_DATASET_FILE = 'puma_indians_diabetes_dataset.csv'
 
 
 def main():
-    df = pd.read_csv('diabetes.csv')
+    if not os.path.exists(_DATASET_FILE):
+        download_file(_DATASET_URL, _DATASET_FILE)
+
+    df = pd.read_csv(_DATASET_FILE)
 
     plot_columns_by_class(df,
                           classifier_column=_CLASSIFIER_COLUMN,
@@ -31,18 +38,24 @@ def main():
     X_train, X_test, y_train, y_test = split_train_test(df, classifier_column=_CLASSIFIER_COLUMN)
     X_train, X_val, y_train, y_val = split_train_test(df, classifier_column=_CLASSIFIER_COLUMN)
 
-    model = Sequential()
+    if not os.path.exists(_MODEL_FILE):
+        model = Sequential()
 
-    model.add(Input(shape=(8,)))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dense(16, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
+        # very simple MLP binary classifier
+        model.add(Input(shape=(8,)))
+        model.add(Dense(32, activation='relu'))
+        model.add(Dense(16, activation='relu'))
+        model.add(Dense(1, activation='sigmoid'))
 
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
+        model.compile(optimizer='adam',
+                      loss='binary_crossentropy',
+                      metrics=['accuracy'])
 
-    model.fit(X_train, y_train, epochs=_EPOCHS)
+        model.fit(X_train, y_train, epochs=_EPOCHS)
+
+        model.save(_MODEL_FILE)
+    else:
+        model = load_model(_MODEL_FILE)
 
     scores = model.evaluate(X_train, y_train)
     print(f'Training accuracy: {scores[1] * 100:.2f}%')

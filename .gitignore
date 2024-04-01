@@ -1,3 +1,6 @@
 .idea/
 venv/
 __pycache__/
+*.egg-info/
+*.csv
+*.keras

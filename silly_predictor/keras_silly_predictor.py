@@ -13,11 +13,11 @@ def main():
 
     model = Sequential()
 
-    # Input
+    # input
     model.add(Input(shape=(3,)))
-    # Layer 1
+    # hidden layer
     model.add(Dense(units=4, activation='sigmoid'))
-    # Output Layer
+    # output
     model.add(Dense(units=1, activation='sigmoid'))
 
     print(model.summary())

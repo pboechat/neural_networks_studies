@@ -5,3 +5,4 @@ pandas
 tensorflow
 seaborn
 scikit-learn
+requests

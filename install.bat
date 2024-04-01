@@ -12,6 +12,6 @@ if not exist venv (
 
 call venv\Scripts\activate.bat
 
-pip install -r requirements.txt
+pip install -e .
 
 pause
