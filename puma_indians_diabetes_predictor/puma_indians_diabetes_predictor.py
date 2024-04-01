@@ -21,6 +21,7 @@ _DATASET_FILE = 'puma_indians_diabetes_dataset.csv'
 
 def main():
     if not os.path.exists(_DATASET_FILE):
+        print(f'Downloading {_DATASET_FILE}...')
         download_file(_DATASET_URL, _DATASET_FILE)
 
     df = pd.read_csv(_DATASET_FILE)
@@ -55,6 +56,7 @@ def main():
 
         model.save(_MODEL_FILE)
     else:
+        print(f'Loading {_MODEL_FILE}...')
         model = load_model(_MODEL_FILE)
 
     scores = model.evaluate(X_train, y_train)
