@@ -2,44 +2,37 @@ import os
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-import pandas as pd
-from keras.models import load_model, Sequential
+from keras.models import Sequential
 from keras.layers import Input, Dense
+from utilities.base_predictor import BasePredictor, run_predictor
 from utilities.data_processing import replace_zeros_with_nans, fill_nans_with_mean, scale, split_train_test
-from utilities.networking import download_file
 from utilities.vizualisation import plot_columns_by_class, plot_confusion_matrix
-
-_COLUMNS_WITH_MISSING_DATA = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
-_CLASSIFIER_COLUMN = 'Outcome'
-_CLASS_VALUES = [0, 1]
-_CLASS_LABELS = ['No Diabetes', 'Diabetes']
-_EPOCHS = 200
-_MODEL_FILE = 'puma_indians_diabetes_model.keras'
-_DATASET_URL = 'https://onedrive.live.com/download?resid=E3637CE709BADFAF%2176635&authkey=!AJuaz58jVaVVugg'
-_DATASET_FILE = 'puma_indians_diabetes_dataset.csv'
+import logging
 
 
-def main():
-    if not os.path.exists(_DATASET_FILE):
-        print(f'Downloading {_DATASET_FILE}...')
-        download_file(_DATASET_URL, _DATASET_FILE)
+class PumaIndiansDiabetesPredictor(BasePredictor):
+    DATASET_URL = 'https://onedrive.live.com/download?resid=E3637CE709BADFAF%2176635&authkey=!AJuaz58jVaVVugg'
+    _COLUMNS_WITH_MISSING_DATA = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+    _CLASSIFIER_COLUMN = 'Outcome'
+    _CLASS_VALUES = [0, 1]
+    _CLASS_LABELS = ['No Diabetes', 'Diabetes']
+    _EPOCHS = 200
 
-    df = pd.read_csv(_DATASET_FILE)
+    def visualize_data(self, df):
+        plot_columns_by_class(df,
+                              classifier_column=self._CLASSIFIER_COLUMN,
+                              class_values=self._CLASS_VALUES,
+                              class_labels=self._CLASS_LABELS)
 
-    plot_columns_by_class(df,
-                          classifier_column=_CLASSIFIER_COLUMN,
-                          class_values=_CLASS_VALUES,
-                          class_labels=_CLASS_LABELS)
+    def create_model(self, df):
+        replace_zeros_with_nans(df, columns=self._COLUMNS_WITH_MISSING_DATA)
+        fill_nans_with_mean(df, columns=self._COLUMNS_WITH_MISSING_DATA)
 
-    replace_zeros_with_nans(df, columns=_COLUMNS_WITH_MISSING_DATA)
-    fill_nans_with_mean(df, columns=_COLUMNS_WITH_MISSING_DATA)
+        df = scale(df, preserve_columns=[self._CLASSIFIER_COLUMN])
 
-    df = scale(df, preserve_columns=[_CLASSIFIER_COLUMN])
+        X_train, X_test, y_train, y_test = split_train_test(df, classifier_column=self._CLASSIFIER_COLUMN)
+        X_train, X_val, y_train, y_val = split_train_test(df, classifier_column=self._CLASSIFIER_COLUMN)
 
-    X_train, X_test, y_train, y_test = split_train_test(df, classifier_column=_CLASSIFIER_COLUMN)
-    X_train, X_val, y_train, y_val = split_train_test(df, classifier_column=_CLASSIFIER_COLUMN)
-
-    if not os.path.exists(_MODEL_FILE):
         model = Sequential()
 
         # very simple MLP binary classifier
@@ -52,23 +45,24 @@ def main():
                       loss='binary_crossentropy',
                       metrics=['accuracy'])
 
-        model.fit(X_train, y_train, epochs=_EPOCHS)
+        model.fit(X_train, y_train, epochs=self._EPOCHS)
 
-        model.save(_MODEL_FILE)
-    else:
-        print(f'Loading {_MODEL_FILE}...')
-        model = load_model(_MODEL_FILE)
+        scores = model.evaluate(X_train, y_train)
+        logging.info(f'Training accuracy: {scores[1] * 100:.2f}%')
 
-    scores = model.evaluate(X_train, y_train)
-    print(f'Training accuracy: {scores[1] * 100:.2f}%')
+        scores = model.evaluate(X_test, y_test)
+        logging.info(f'Testing accuracy: {scores[1] * 100:.2f}%')
 
-    scores = model.evaluate(X_test, y_test)
-    print(f'Testing accuracy: {scores[1] * 100:.2f}%')
+        y_pred = self.predict(model, X_test)
 
-    # silly replacement for model.predict_classes()
-    y_pred = (model.predict(X_test) > 0.5).astype('int8').flatten()
-    plot_confusion_matrix(y_test, y_pred, class_labels=_CLASS_LABELS)
+        plot_confusion_matrix(y_test, y_pred, class_labels=self._CLASS_LABELS)
+
+        return model
+
+    def predict(self, model, df):
+        # silly replacement for model.predict_classes()
+        return (model.predict(df) > 0.5).astype('int8').flatten()
 
 
 if __name__ == '__main__':
-    main()
+    run_predictor()
