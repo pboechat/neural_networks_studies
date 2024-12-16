@@ -13,14 +13,13 @@ import logging
 class PumaIndiansDiabetesPredictor(BasePredictor):
     DATASET_URL = 'https://onedrive.live.com/download?resid=E3637CE709BADFAF%2176635&authkey=!AJuaz58jVaVVugg'
     _COLUMNS_WITH_MISSING_DATA = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
-    _CLASSIFIER_COLUMN = 'Outcome'
     _CLASS_VALUES = [0, 1]
     _CLASS_LABELS = ['No Diabetes', 'Diabetes']
     _EPOCHS = 200
 
     def visualize_data(self, df):
         plot_columns_by_class(df,
-                              classifier_column=self._CLASSIFIER_COLUMN,
+                              target_column='Outcome',
                               class_values=self._CLASS_VALUES,
                               class_labels=self._CLASS_LABELS)
 
@@ -28,10 +27,10 @@ class PumaIndiansDiabetesPredictor(BasePredictor):
         replace_zeros_with_nans(df, columns=self._COLUMNS_WITH_MISSING_DATA)
         fill_nans_with_mean(df, columns=self._COLUMNS_WITH_MISSING_DATA)
 
-        df = scale(df, preserve_columns=[self._CLASSIFIER_COLUMN])
+        df = scale(df, preserve_columns=['Outcome'])
 
-        X_train, X_test, y_train, y_test = split_train_test(df, classifier_column=self._CLASSIFIER_COLUMN)
-        X_train, X_val, y_train, y_val = split_train_test(df, classifier_column=self._CLASSIFIER_COLUMN)
+        X_train, X_test, y_train, y_test = split_train_test(df, target_column='Outcome')
+        X_train, X_val, y_train, y_val = split_train_test(df, target_column='Outcome')
 
         model = Sequential()
 
@@ -40,6 +39,8 @@ class PumaIndiansDiabetesPredictor(BasePredictor):
         model.add(Dense(32, activation='relu'))
         model.add(Dense(16, activation='relu'))
         model.add(Dense(1, activation='sigmoid'))
+
+        model.summary()
 
         model.compile(optimizer='adam',
                       loss='binary_crossentropy',

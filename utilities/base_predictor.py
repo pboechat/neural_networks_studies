@@ -39,11 +39,11 @@ class BasePredictor(ABC):
 
     @property
     def dataset_name(self):
-        return f'{camel_to_snake(self.__class__.__name__).replace("predictor", "dataset")}{self.DATASET_EXT}'
+        return f'{camel_to_snake(self.__class__.__name__).replace("_predictor", "") + "_dataset"}{self.DATASET_EXT}'
 
     @property
     def model_name(self):
-        return f'{camel_to_snake(self.__class__.__name__).replace("predictor", "model")}{self.MODEL_EXT}'
+        return f'{camel_to_snake(self.__class__.__name__).replace("_predictor", "") + "_model"}{self.MODEL_EXT}'
 
     def _load_dataframe(self):
         return load_dataframe(self.dataset_name, url=self.DATASET_URL, **self.DATASET_LOAD_KWARGS)
@@ -77,6 +77,8 @@ class BasePredictor(ABC):
 
         # TODO:
         logging.info(y_pred)
+
+        return y_pred
 
     @abstractmethod
     def predict(self, model, df):

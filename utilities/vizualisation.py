@@ -12,18 +12,18 @@ def plot_histogram(df):
     plt.show()
 
 
-def plot_columns_by_class(df, *, classifier_column, class_values=(0, 1), class_labels=('Zero', 'One')):
+def plot_columns_by_class(df, *, target_column, class_values=(0, 1), class_labels=('Zero', 'One')):
     side = int(math.ceil(math.sqrt(len(df.columns) - 1)))
     plt.subplots(side, side, figsize=(15, 15))
     i = 0
     for column in df.columns:
-        if column == classifier_column:
+        if column == target_column:
             continue
         i += 1
         ax = plt.subplot(side, side, i)
         ax.yaxis.set_ticklabels([])
         for j, clazz in enumerate(class_labels):
-            sns.distplot(df.loc[df[classifier_column] == class_values[j]][column],
+            sns.distplot(df.loc[df[target_column] == class_values[j]][column],
                          hist=False,
                          axlabel=False,
                          kde_kws={

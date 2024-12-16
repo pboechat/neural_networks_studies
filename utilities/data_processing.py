@@ -23,15 +23,18 @@ def fill_nans_with_mean(df, *, columns):
         df[column] = df[column].fillna(df[column].mean())
 
 
-def scale(df, *, preserve_columns=()):
-    df_scaled = sklearn.preprocessing.scale(df)
-    df_scaled = pd.DataFrame(df_scaled, columns=df.columns)
+def scale(df, *, preserve_columns=(), ignore_columns=()):
+    df_prescaled = df.copy()
+    if ignore_columns:
+        df_prescaled = df.drop(ignore_columns, axis=1)
+    df_scaled = sklearn.preprocessing.scale(df_prescaled)
+    df_scaled = pd.DataFrame(df_scaled, columns=df_prescaled.columns)
     for column in preserve_columns:
         df_scaled[column] = df[column]
     return df_scaled
 
 
-def split_train_test(df, *, classifier_column, test_size=0.2):
-    X = df.loc[:, df.columns != classifier_column]
-    y = df.loc[:, classifier_column]
+def split_train_test(df, *, target_column, test_size=0.2):
+    X = df.loc[:, df.columns != target_column]
+    y = df.loc[:, target_column]
     return train_test_split(X, y, test_size=test_size)
